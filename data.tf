@@ -7,8 +7,3 @@ data "ibm_is_ssh_key" "sshkey" {
 data "ibm_is_zones" "regional" {
   region = var.region
 }
-
-data "ibm_resource_instance" "cos" {
-  count = var.existing_cos_instance != "" ? 1 : 0
-  name  = var.existing_cos_instance
-}

@@ -8,12 +8,6 @@ variable "region" {
   type        = string
 }
 
-variable "project_prefix" {
-  description = "Prefix to use for resource names"
-  type        = string
-default = ""
-}
-
 variable "existing_ssh_key" {
   description = "Name of an existing SSH key in the region. If not set, a new SSH key will be created."
   type        = string
@@ -31,8 +25,14 @@ variable "default_address_prefix" {
   default     = "auto"
 }
 
-variable "existing_cos_instance" {
-  description = "Name of an existing COS instance to use for resources. If not set, a new COS instance will be created."
+variable "instance_count" {
+  description = "The number of instances to create"
+  type        = number
+  default     = 2
+}
+
+variable "owner" {
+  description = "The owner of the resources, used as a tag."
   type        = string
 }
 
@@ -159,3 +159,4 @@ variable "frontend_rules" {
     }
   ]
 }
+

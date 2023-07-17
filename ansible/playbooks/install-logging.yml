@@ -1,0 +1,60 @@
+---
+- name: 'Install Logging Agent'
+  gather_facts: false
+  hosts: all
+  vars_files:
+    deployment_vars.yml
+  tasks:
+    - name: Add RPM GPG key for RPM based systems
+      ansible.builtin.rpm_key:
+        state: present
+        key: https://repo.logdna.com/logdna.gpg
+      when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS"
+    - name: Add LogDNA repo to RPM Based systems
+      ansible.builtin.blockinfile:
+        path: /etc/yum.repos.d/logdna.repo
+        block: |
+          [logdna]
+          name=LogDNA packages
+          baseurl=https://repo.logdna.com/el6/
+          enabled=1
+          gpgcheck=1
+          gpgkey=https://repo.logdna.com/logdna.gpg1
+      when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS"
+    - name: Install LogDNA agent on RPM based systems
+      ansible.builtin.yum:
+        name: logdna-agent
+        state: present
+      when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS"
+    - name: Add logdna apt-key to Deb based systems
+      ansible.builtin.apt_key:
+        url: https://repo.logdna.com/logdna.gpg
+        state: present
+      when: ansible_distribution == "Debian" or ansible_distribution == "Ubuntu"
+    - name: Add logdna repo to Deb based systems
+      ansible.builtin.apt_repository:
+        repo: deb https://repo.logdna.com stable main
+      when: ansible_distribution == "Debian" or ansible_distribution == "Ubuntu"
+    - name: Update apt packages on Deb based systems
+      ansible.builtin.apt: 
+        update_cache=yes
+      when: ansible_distribution == "Debian" or ansible_distribution == "Ubuntu"
+    - name: Install logdna-agent on Deb based systems
+      ansible.builtin.apt:
+        name: logdna-agent
+        state: present
+        update_cache: yes
+      when: ansible_distribution == "Debian" or ansible_distribution == "Ubuntu"
+    - name: set logdna-agent ingestion key 
+      ansible.builtin.shell: logdna-agent -k "{{ logdna_ingestion_key }}"
+    - name: set logdna-agent api endpoint 
+      ansible.builtin.shell: logdna-agent -s "LOGDNA_APIHOST=api.{{ region }}.logging.cloud.ibm.com"
+    - name: set logdna-agent logging endpoint 
+      ansible.builtin.shell: logdna-agent -s "LOGDNA_LOGHOST=logs.{{ region }}.logging.cloud.ibm.com"
+    - name: Set control plane logdna-agent tags
+      ansible.builtin.shell: logdna-agent -t "{{ deployment_prefix }}"
+    - name: Enable logdna-agent service at start up 
+      ansible.builtin.sysvinit: 
+        name: logdna-agent
+        state: started
+        enabled: yes

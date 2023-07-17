@@ -1,10 +1,6 @@
 locals {
-  prefix      = var.project_prefix != "" ? var.project_prefix : "${random_string.prefix.0.result}"
+  prefix      = random_string.prefix.result
   ssh_key_ids = var.existing_ssh_key != "" ? [data.ibm_is_ssh_key.sshkey[0].id] : [ibm_is_ssh_key.generated_key[0].id]
-
-  cos_instance = var.existing_cos_instance != "" ? data.ibm_resource_instance.cos.0.id : null
-  cos_guid     = var.existing_cos_instance != "" ? data.ibm_resource_instance.cos.0.guid : substr(trim(trimprefix(module.cos.cos_instance_id, "crn:v1:bluemix:public:cloud-object-storage:global:a/"), "::"), 33, -1)
-
 
   deploy_date = formatdate("YYYYMMDD", timestamp())
 
@@ -30,6 +26,7 @@ locals {
   tags = [
     "provider:ibm",
     "workspace:${terraform.workspace}",
+    "owner:${var.owner}"
   ]
 }
 
@@ -42,7 +39,6 @@ module "resource_group" {
 
 # Generate a random string if a project prefix was not provided
 resource "random_string" "prefix" {
-  count   = var.project_prefix != "" ? 0 : 1
   length  = 4
   special = false
   upper   = false
@@ -106,43 +102,41 @@ module "security_group" {
   security_group_rules  = local.frontend_rules
 }
 
-resource "ibm_is_floating_ip" "example" {
-  name           = "${local.prefix}-${local.vpc_zones[0].zone}-fip"
-  zone           = local.vpc_zones[0].zone
+module "bastion" {
+  source            = "./modules/compute"
+  prefix            = "${local.prefix}-bastion"
+  resource_group_id = module.resource_group.resource_group_id
+  vpc_id            = module.vpc.vpc_id[0]
+  subnet_id         = module.vpc.subnet_ids[0]
+  security_group_id = module.security_group.security_group_id[0]
+  zone              = local.vpc_zones[0].zone
+  ssh_key_ids       = local.ssh_key_ids
+  tags              = local.tags
+}
+
+resource "ibm_is_floating_ip" "bastion" {
+  name           = "${local.prefix}-${local.vpc_zones[0].zone}-bastion-ip"
+  target         = module.bastion.primary_network_interface
   resource_group = module.resource_group.resource_group_id
   tags           = local.tags
 }
 
-module "cos" {
-  create_cos_instance      = var.existing_cos_instance != "" ? false : true
-  depends_on               = [module.vpc]
-  source                   = "git::https://github.com/terraform-ibm-modules/terraform-ibm-cos?ref=v6.7.0"
-  resource_group_id        = module.resource_group.resource_group_id
-  region                   = var.region
-  bucket_name              = "${local.prefix}-${local.vpc_zones[0].zone}-collector-bucket"
-  create_hmac_key          = (var.existing_cos_instance != "" ? false : true)
-  create_cos_bucket        = true
-  kms_encryption_enabled   = false
-  hmac_key_name            = (var.existing_cos_instance != "" ? null : "${local.prefix}-hmac-key")
-  cos_instance_name        = (var.existing_cos_instance != "" ? null : "${local.prefix}-cos-instance")
-  cos_tags                 = local.tags
-  existing_cos_instance_id = (var.existing_cos_instance != "" ? local.cos_instance : null)
+module "compute" {
+  count             = var.instance_count
+  source            = "./modules/compute"
+  prefix            = "${local.prefix}-instance-${count.index}"
+  resource_group_id = module.resource_group.resource_group_id
+  vpc_id            = module.vpc.vpc_id[0]
+  subnet_id         = module.vpc.subnet_ids[0]
+  security_group_id = module.security_group.security_group_id[0]
+  zone              = local.vpc_zones[0].zone
+  ssh_key_ids       = local.ssh_key_ids
+  tags              = local.tags
 }
 
-resource "ibm_iam_authorization_policy" "cos_flowlogs" {
-  count                       = var.existing_cos_instance != "" ? 0 : 1
-  depends_on                  = [module.cos]
-  source_service_name         = "is"
-  source_resource_type        = "flow-log-collector"
-  target_service_name         = "cloud-object-storage"
-  target_resource_instance_id = local.cos_guid
-  roles                       = ["Writer", "Reader"]
-}
-
-resource "ibm_is_flow_log" "frontend_collector" {
-  depends_on     = [ibm_iam_authorization_policy.cos_flowlogs]
-  name           = "${local.prefix}-frontend-subnet-collector"
-  target         = module.vpc.subnet_ids[0]
-  active         = true
-  storage_bucket = module.cos.bucket_name
+module "ansible" {
+  source            = "./ansible"
+  bastion_public_ip = ibm_is_floating_ip.bastion.address
+  instances         = module.compute[*].instance[0]
+  deployment_prefix = local.prefix
 }
