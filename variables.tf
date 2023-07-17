@@ -148,14 +148,30 @@ variable "frontend_rules" {
       }
     },
     {
-      name       = "dns-outbound"
+      name       = "microk8s-inbound"
+      direction  = "inbound"
+      remote     = "0.0.0.0/0"
+      ip_version = "ipv4"
+      tcp = {
+        port_min = 25000
+        port_max = 25000
+      }
+    },
+    {
+      name       = "microk8s-api-inbound"
+      direction  = "inbound"
+      remote     = "0.0.0.0/0"
+      ip_version = "ipv4"
+      tcp = {
+        port_min = 16443
+        port_max = 16443
+      }
+    },
+    {
+      name       = "all-outbound"
       direction  = "outbound"
       remote     = "0.0.0.0/0"
       ip_version = "ipv4"
-      udp = {
-        port_min = 53
-        port_max = 53
-      }
     }
   ]
 }

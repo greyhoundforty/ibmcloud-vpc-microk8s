@@ -15,5 +15,6 @@ packages:
 snap:
     commands:
       00: snap install yq
+      01: snap install microk8s --classic --channel=1.27/stable
 final_message: "The system is finally up, after $UPTIME seconds"
 output: {all: '| tee -a /var/log/cloud-init-output.log'}

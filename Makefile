@@ -7,9 +7,48 @@ else
 		SHELL := /bin/bash
 endif
 
+# define standard colors
+ifneq (,$(findstring xterm,${TERM}))
+	BLACK        := $(shell tput -Txterm setaf 0)
+	RED          := $(shell tput -Txterm setaf 1)
+	GREEN        := $(shell tput -Txterm setaf 2)
+	YELLOW       := $(shell tput -Txterm setaf 3)
+	LIGHTPURPLE  := $(shell tput -Txterm setaf 4)
+	PURPLE       := $(shell tput -Txterm setaf 5)
+	BLUE         := $(shell tput -Txterm setaf 6)
+	WHITE        := $(shell tput -Txterm setaf 7)
+	RESET := $(shell tput -Txterm sgr0)
+else
+	BLACK        := ""
+	RED          := ""
+	GREEN        := ""
+	YELLOW       := ""
+	LIGHTPURPLE  := ""
+	PURPLE       := ""
+	BLUE         := ""
+	WHITE        := ""
+	RESET        := ""
+endif
+
+# set target color
+TARGET_COLOR := $(BLUE)
+
+colors: ## show all the colors
+	@echo "${BLACK}BLACK${RESET}"
+	@echo "${RED}RED${RESET}"
+	@echo "${GREEN}GREEN${RESET}"
+	@echo "${YELLOW}YELLOW${RESET}"
+	@echo "${LIGHTPURPLE}LIGHTPURPLE${RESET}"
+	@echo "${PURPLE}PURPLE${RESET}"
+	@echo "${BLUE}BLUE${RESET}"
+	@echo "${WHITE}WHITE${RESET}"
+
 
 .PHONY: initialize
 initialize: ## Initialize Terraform configuration, format HCL and run validate
+	@echo ""
+	@echo "${BLACK}:: ${RED}Running a fmt, init, and validate on current environment${RESET} ${BLACK}::${RESET}"
+	@echo ""
 	terraform fmt -recursive
 	terraform init -upgrade=true
 	terraform validate
@@ -25,14 +64,23 @@ fmt: ## Rewrites config to canonical format
 
 .PHONY: plan
 plan: ## Run a terraform plan against current workspace and save it to a file
+	@echo ""
+	@echo "${BLACK}[:: ${RED}Running a plan on current environment${RESET} ${BLACK}::]${RESET}"
+	@echo ""
 	terraform plan -out "$$(terraform workspace show).tfplan"
 
 .PHONY: apply
 apply: ## Run a terraform apply on previously saved plan file
+	@echo ""
+	@echo "${BLACK}:: ${RED}Running an apply on previously saved plan${RESET} ${BLACK}::${RESET}"
+	@echo ""
 	terraform apply "$$(terraform workspace show).tfplan"
 
 .PHONY: reset
 reset: ## Clean up the local state and destroy the infrastructure
+	@echo ""
+	@echo "${BLACK}:: ${RED}Cleaning up terraform envionrment${RESET} ${BLACK}::${RESET}"
+	@echo ""
 	terraform destroy -auto-approve
 	rm -rf .terraform
 	rm -rf .terraform.lock.hcl
