@@ -25,10 +25,16 @@ variable "default_address_prefix" {
   default     = "auto"
 }
 
-variable "instance_count" {
-  description = "The number of instances to create"
+variable "controller_count" {
+  description = "The number of control instances to create"
   type        = number
-  default     = 2
+  default     = 1
+}
+
+variable "worker_count" {
+  description = "The number of worker instances to create"
+  type        = number
+  default     = 3
 }
 
 variable "owner" {

@@ -1,3 +1,4 @@
 variable "bastion_public_ip" {}
-variable "instances" {}
+variable "controller" {}
+variable "workers" {}
 variable "deployment_prefix" {}

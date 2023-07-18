@@ -89,91 +89,26 @@ reset: ## Clean up the local state and destroy the infrastructure
 	rm -rf *.tfplan
 
 .PHONY: all
-all: initialize plan apply ## Initialize, plan and apply the infrastructure
+all: initialize plan apply ansible-run ## Initialize, plan and apply the infrastructure and then run Ansible playbooks
+
+.PHONY: ansible-run
+ansible-run: ## Run default playbooks to test the infrastructure
+	@echo "${WHITE}:: ${BLUE}Sleeping for 30 seconds to ensure cloud-init updates have completed: ${RESET} ${WHITE}::${RESET}"
+	sleep 30
+	@echo ""
+	@echo "${BLACK}:: ${RED}Running ansible playbook to check host connectivity ${RESET} ${BLACK}::${RESET}"
+	@echo ""
+	ansible-playbook -i ansible/inventory.ini ansible/playbooks/ping-all.yml
+	@echo ""
+	@echo "${BLACK}:: ${RED}Running ansible playbook to update all systems ${RESET} ${BLACK}::${RESET}"
+	@echo ""
+	ansible-playbook -i ansible/inventory.ini ansible/playbooks/update-systems.yml
+	@echo ""
+	@echo "${BLACK}:: ${RED}Running ansible playbooks to deploy microk8s ${RESET} ${BLACK}::${RESET}"
+	@echo ""
+	ansible-playbook -i ansible/inventory.ini ansible/playbooks/deploy-microk8s.yml
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 .DEFAULT_GOAL := help
-
-# plan:
-# 	@bash terraform validate
-# 	@bash terraform plan -out "$$(terraform workspace show).tfplan"
-
-# apply:
-# 	@bash terraform apply "$$(terraform workspace show).tfplan"
-
-# destroy:
-# 	@bash terraform destroy -auto-approve
-
-# all: validate plan apply
-
-
-# .PHONY: fmt
-# fmt: ## Rewrites config to canonical format
-# 	@bash $(dir $(mkfile_path))/terraform.sh fmt $(args)
-
-# .PHONY: lint
-# lint: ## Lint the HCL code
-# 	@bash $(dir $(mkfile_path))/terraform.sh fmt -diff=true -check $(args) $(RUN_ARGS)
-
-# .PHONY: validate
-# validate: ## Basic syntax check
-# 	@bash $(dir $(mkfile_path))/terraform.sh validate $(args) $(RUN_ARGS)
-
-# .PHONY: show
-# show: ## List infra resources
-# 	@bash $(dir $(mkfile_path))/terraform.sh show $(args) $(RUN_ARGS)
-
-# .PHONY: refresh
-# refresh: ## Refresh infra resources
-# 	@bash $(dir $(mkfile_path))/terraform.sh refresh $(args) $(RUN_ARGS)
-
-# .PHONY: console
-# console: ## Console infra resources
-# 	@bash $(dir $(mkfile_path))/terraform.sh console $(args) $(RUN_ARGS)
-
-# .PHONY: import
-# import: ## Import infra resources
-# 	@bash $(dir $(mkfile_path))/terraform.sh import $(args) $(RUN_ARGS)
-
-# .PHONY: taint
-# taint: ## Taint infra resources
-# 	bash $(dir $(mkfile_path))terraform.sh taint -module=$(module) $(args) $(RUN_ARGS)
-
-# .PHONY: untaint
-# untaint: ## Untaint infra resources
-# 	bash $(dir $(mkfile_path))terraform.sh untaint -module=$(module) $(args) $(RUN_ARGS)
-
-# .PHONY: workspace
-# workspace: ## Workspace infra resources
-# 	bash $(dir $(mkfile_path))terraform.sh workspace $(args) $(RUN_ARGS)
-
-# .PHONY: state
-# state: ## Inspect or change the remote state of your resources
-# 	@bash $(dir $(mkfile_path))/terraform.sh state $(args) $(RUN_ARGS)
-
-# .PHONY: plan
-# plan: dry-run
-# .PHONY: dry-run
-# dry-run: install ## Dry run resources changes
-# ifndef landscape
-# 	@bash $(dir $(mkfile_path))/terraform.sh plan $(args) $(RUN_ARGS)
-# else
-# 	@bash $(dir $(mkfile_path))/terraform.sh plan $(args) $(RUN_ARGS) | landscape
-# endif
-
-# .PHONY: apply
-# apply: run
-# .PHONY: run
-# run: ## Execute resources changes
-# 	@bash $(dir $(mkfile_path))/terraform.sh apply $(args) $(RUN_ARGS)
-
-# .PHONY: destroy
-# destroy: ## Destroy resources
-# 	@bash $(dir $(mkfile_path))/terraform.sh destroy $(args) $(RUN_ARGS)
-
-# .PHONY: raw
-# raw: ## Raw command sent to terraform
-# 	@bash $(dir $(mkfile_path))/terraform.sh $(RUN_ARGS) $(args)
-

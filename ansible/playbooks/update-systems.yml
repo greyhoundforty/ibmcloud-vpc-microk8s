@@ -11,4 +11,8 @@
       ansible.builtin.apt: 
         upgrade=yes 
         update_cache=yes
+      register: apt_status
+      until: apt_status is success
+      delay: 10
+      retries: 10
       when: ansible_facts['os_family'] == "Debian"   

@@ -121,10 +121,23 @@ resource "ibm_is_floating_ip" "bastion" {
   tags           = local.tags
 }
 
-module "compute" {
-  count             = var.instance_count
+module "controllers" {
+  count             = var.controller_count
   source            = "./modules/compute"
-  prefix            = "${local.prefix}-instance-${count.index}"
+  prefix            = "${local.prefix}-controller-${count.index}"
+  resource_group_id = module.resource_group.resource_group_id
+  vpc_id            = module.vpc.vpc_id[0]
+  subnet_id         = module.vpc.subnet_ids[0]
+  security_group_id = module.security_group.security_group_id[0]
+  zone              = local.vpc_zones[0].zone
+  ssh_key_ids       = local.ssh_key_ids
+  tags              = local.tags
+}
+
+module "workers" {
+  count             = var.worker_count
+  source            = "./modules/compute"
+  prefix            = "${local.prefix}-worker-${count.index}"
   resource_group_id = module.resource_group.resource_group_id
   vpc_id            = module.vpc.vpc_id[0]
   subnet_id         = module.vpc.subnet_ids[0]
@@ -137,6 +150,7 @@ module "compute" {
 module "ansible" {
   source            = "./ansible"
   bastion_public_ip = ibm_is_floating_ip.bastion.address
-  instances         = module.compute[*].instance[0]
+  controller        = module.controllers[*].instance[0]
+  workers           = module.workers[*].instance[0]
   deployment_prefix = local.prefix
 }
