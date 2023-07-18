@@ -9,3 +9,5 @@ existing_resource_group = ""
 # If not set, a new one will be created
 existing_ssh_key = ""
 
+# Resource owner, will be used as a tag on supported services
+owner = ""

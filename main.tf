@@ -2,8 +2,6 @@ locals {
   prefix      = random_string.prefix.result
   ssh_key_ids = var.existing_ssh_key != "" ? [data.ibm_is_ssh_key.sshkey[0].id] : [ibm_is_ssh_key.generated_key[0].id]
 
-  deploy_date = formatdate("YYYYMMDD", timestamp())
-
   zones = length(data.ibm_is_zones.regional.zones)
   vpc_zones = {
     for zone in range(local.zones) : zone => {
@@ -153,4 +151,5 @@ module "ansible" {
   controller        = module.controllers[*].instance[0]
   workers           = module.workers[*].instance[0]
   deployment_prefix = local.prefix
+  region            = var.region
 }
