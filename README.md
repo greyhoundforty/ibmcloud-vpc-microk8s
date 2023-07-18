@@ -1,5 +1,5 @@
-# VPC Quick Template
+# Microk8s deployment on IBM Cloud VPC
 
-This repository contains sample code I use for quickly standing up a VPC lab in IBM Cloud. I use this for testing and demos, as well as honing my ansible skills.
+This repository contains the Terraform code to deploy a Microk8s cluster on IBM Cloud VPC.
 
-
+![Microk8s on IBM Cloud VPC](./microk8s-vpc.png)
